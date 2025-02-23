@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>{{ message }}</h2>
+
+    {% if request.user.is_authenticated %}
+        <p>Enjoy your personalised dashboard and manage your tasks.</p>
+        <a href="{% url 'dashboard' %}">Go to Dashboard</a>
+    {% else %}
+        <p>Please <a href="{% url 'login' %}">log in</a> to access more features.</p>
+    {% endif %}
+{% endblock %}

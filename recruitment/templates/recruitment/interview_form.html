@@ -1,0 +1,66 @@
+{% extends "recruitment/base.html" %}
+
+{% block title %}Schedule New Interview{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">Schedule a New Interview</h2>
+    
+    <form method="POST" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="job" class="form-label">Select Job</label>
+            {{ form.job }}
+        </div>
+
+        <div class="mb-3">
+            <label for="candidate" class="form-label">Select Candidate</label>
+            {{ form.candidate }}
+        </div>
+
+        <div class="mb-3">
+            <label for="interviewer" class="form-label">Select Interviewer</label>
+            {{ form.interviewer }}
+        </div>
+
+        <div class="mb-3">
+            <label for="interview_type" class="form-label">Interview Type</label>
+            {{ form.interview_type }}
+        </div>
+
+        <div class="mb-3">
+            <label for="scheduled_date" class="form-label">Scheduled Date & Time</label>
+            {{ form.scheduled_date }}
+        </div>
+
+        <div class="mb-3">
+            <label for="stage" class="form-label">Interview Stage</label>
+            {{ form.stage }}
+        </div>
+
+        <div class="mb-3">
+            <label for="status" class="form-label">Interview Status</label>
+            {{ form.status }}
+        </div>
+
+        <div class="mb-3">
+            <label for="duration" class="form-label">Duration (minutes)</label>
+            {{ form.duration }}
+        </div>
+
+        <div class="mb-3">
+            <label for="notes" class="form-label">Interview Notes</label>
+            {{ form.notes }}
+        </div>
+
+        <div class="mb-3">
+            <label for="feedback" class="form-label">Interviewer Feedback</label>
+            {{ form.feedback }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Schedule Interview</button>
+        <a href="{% url 'interview_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

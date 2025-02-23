@@ -1,0 +1,15 @@
+{% extends 'recruitment/base.html' %}
+
+{% block title %}Companies{% endblock %}
+
+{% block content %}
+    <h2>Companies</h2>
+    <a href="{% url 'company_create' %}">Add New Company</a>
+    <ul>
+        {% for company in companies %}
+            <li>{{ company.name }} - {{ company.email }}</li>
+        {% empty %}
+            <li>No companies found.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Apply for {{ job.job_title }}</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label">Full Name</label>
+        {{ form.full_name }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        {{ form.email }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Phone</label>
+        {{ form.phone }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Upload Resume</label>
+        {{ form.resume }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Application</button>
+</form>
+
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>{{ task.title }}</h1>
+    <p><strong>Due Date:</strong> {{ task.due_by|date:"Y-m-d" }}</p>
+    <p><strong>Assigned To:</strong> {{ task.assigned_to.username }}</p>
+    <p><strong>Status:</strong> {{ task.completed_at|yesno:"Completed,Pending" }}</p>
+    <p><strong>Related Email:</strong> {{ task.related_email.subject|default:"None" }}</p>
+    <p><strong>Depends On:</strong> {{ task.depends_on.title|default:"None" }}</p>
+    <p><strong>Follow-Up After:</strong> {{ task.follow_up_after }} days</p>
+    <p><a href="{% url 'task_update' task.id %}">Edit</a> | <a href="{% url 'task_list' %}">Back</a></p>
+{% endblock %}

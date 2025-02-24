@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Task Manager</h1>
+    <div>
+        <a href="?category=urgent_important">Urgent & Important</a> |
+        <a href="?category=important_not_urgent">Important, Not Urgent</a> |
+        <a href="?category=urgent_not_important">Urgent, Not Important</a> |
+        <a href="?category=not_urgent_not_important">Not Urgent, Not Important</a> |
+        <a href="{% url 'task_list' %}">All</a>
+    </div>
+    <div id="kanban-board" style="display: flex; gap: 20px;">
+        {% for category in "urgent_important,important_not_urgent,urgent_not_important,not_urgent_not_important" %}
+            <div class="kanban-column" data-category="{{ category }}">
+                <h3>{{ category|replace:"_"|title }}</h3>
+                {% for task in tasks %}
+                    {% if task.related_email.category == category %}
+                        <div class="task-card" draggable="true" data-id="{{ task.id }}">
+                            {{ task.title }}<br>
+                            Due: {{ task.due_by|date:"Y-m-d" }}<br>
+                            <a href="{% url 'task_detail' task.id %}">View</a>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <p><a href="{% url 'task_create' %}">Add Task</a> | <a href="{% url 'email_list' %}">View Emails</a></p>
+    <script>
+        // Basic drag-and-drop (enhance with Dragula or similar)
+        document.querySelectorAll('.task-card').forEach(card => {
+            card.addEventListener('dragstart', e => e.dataTransfer.setData('text', card.dataset.id));
+        });
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            column.addEventListener('dragover', e => e.preventDefault());
+            column.addEventListener('drop', e => {
+                e.preventDefault();
+                const taskId = e.dataTransfer.getData('text');
+                const newCategory = column.dataset.category;
+                fetch(`/tasks/update_category/${taskId}/${newCategory}/`, { method: 'POST' })
+                    .then(() => location.reload());
+            });
+        });
+    </script>
+{% endblock %}

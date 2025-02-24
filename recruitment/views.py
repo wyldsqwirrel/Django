@@ -17,7 +17,6 @@ from .forms import (
     JobForm,
     PlacementForm,
     InterviewForm,
-    JobApplicationForm,
 )
 
 logger = logging.getLogger(__name__)

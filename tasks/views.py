@@ -1,81 +1,88 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from rest_framework import viewsets
-from .models import Task
-from .serializers import TaskSerializer
-from .forms import TaskForm
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from .models import Task, Email
+from django.utils import timezone
 
-def run_process_jobs(request):
-    # Example function to process jobs (modify as needed)
-    response_data = {"message": "Jobs processed successfully"}
-    return JsonResponse(response_data)
-
-@csrf_exempt
-def run_task(request):
-    """
-    Dummy function to simulate running a task.
-    """
-    if request.method == "POST":
-        # Example: Creating a test task
-        task = Task.objects.create(name="New Task", status="pending")
-        return JsonResponse({"message": f"Task {task.name} created successfully!"})
-    
-    return JsonResponse({"error": "Invalid request method"}, status=400)
-
-class TaskViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows tasks to be viewed or edited.
-    """
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
-
+@login_required
 def task_list(request):
-    tasks = Task.objects.all()
-    return render(request, 'tasks/task_list.html', {'tasks': tasks})
+    category = request.GET.get('category', '')
+    tasks = Task.objects.filter(assigned_to=request.user)
+    if category:
+        tasks = tasks.filter(related_email__category=category)
+    emails = Email.objects.all()
+    return render(request, 'tasks/task_list.html', {'tasks': tasks, 'emails': emails, 'category': category})
 
-def task_detail(request, pk):
-    task = get_object_or_404(Task, pk=pk)
+@login_required
+def task_detail(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    task.check_follow_up()  # Check for follow-ups
     return render(request, 'tasks/task_detail.html', {'task': task})
 
+@login_required
 def task_create(request):
     if request.method == 'POST':
-        form = TaskForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('task_list')
-    else:
-        form = TaskForm()
-    return render(request, 'tasks/task_form.html', {'form': form})
+        title = request.POST['title']
+        due_by = request.POST['due_by']
+        assigned_to = User.objects.get(id=request.POST['assigned_to'])
+        related_email_id = request.POST.get('related_email')
+        depends_on_id = request.POST.get('depends_on')
+        follow_up_after = request.POST.get('follow_up_after', 3)
+        task = Task(
+            title=title, due_by=due_by, assigned_to=assigned_to,
+            related_email=Email.objects.get(id=related_email_id) if related_email_id else None,
+            depends_on=Task.objects.get(id=depends_on_id) if depends_on_id else None,
+            follow_up_after=follow_up_after
+        )
+        task.save()
+        return redirect('task_list')
+    users = User.objects.all()
+    emails = Email.objects.all()
+    tasks = Task.objects.filter(assigned_to=request.user)
+    return render(request, 'tasks/task_create.html', {'users': users, 'emails': emails, 'tasks': tasks})
 
-
-from django.shortcuts import render, redirect, get_object_or_404
-from tasks.models import Task
-from tasks.forms import TaskForm
-
-def task_update(request, pk):
-    """
-    View to update an existing task.
-    """
-    task = get_object_or_404(Task, pk=pk)
-
-    if request.method == "POST":
-        form = TaskForm(request.POST, instance=task)
-        if form.is_valid():
-            form.save()
-            return redirect("task_list")  # ✅ Redirect to task list after update
-    else:
-        form = TaskForm(instance=task)
-
-    return render(request, "tasks/task_form.html", {"form": form, "task": task})
-
-def task_delete(request, pk):
-    task = get_object_or_404(Task, pk=pk)
+@login_required
+def task_update(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
     if request.method == 'POST':
-        task.delete()
+        task.title = request.POST['title']
+        task.due_by = request.POST['due_by']
+        task.assigned_to = User.objects.get(id=request.POST['assigned_to'])
+        related_email_id = request.POST.get('related_email')
+        depends_on_id = request.POST.get('depends_on')
+        task.related_email = Email.objects.get(id=related_email_id) if related_email_id else None
+        task.depends_on = Task.objects.get(id=depends_on_id) if depends_on_id else None
+        task.follow_up_after = request.POST.get('follow_up_after', 3)
+        if 'completed' in request.POST:
+            task.completed_at = timezone.now()
+            if task.related_email:
+                task.related_email.synced = True
+                task.related_email.save()
+        else:
+            task.completed_at = None
+        task.save()
+        return redirect('task_detail', task_id=task.id)
+    users = User.objects.all()
+    emails = Email.objects.all()
+    tasks = Task.objects.filter(assigned_to=request.user)
+    return render(request, 'tasks/task_update.html', {'task': task, 'users': users, 'emails': emails, 'tasks': tasks})
 
-def create_completed_subtask():
-    return "Subtask created successfully"
+@login_required
+def email_list(request):
+    emails = Email.objects.all()
+    for email in emails:
+        email.auto_categorize()  # Auto-categorize on view
+    return render(request, 'tasks/email_list.html', {'emails': emails})
 
-    return redirect('task_list')
-    return render(request, 'tasks/task_confirm_delete.html', {'task': task})
+@login_required
+def email_create(request):
+    if request.method == 'POST':
+        subject = request.POST['subject']
+        body = request.POST['body']
+        sender = request.POST['sender']
+        recipient = request.POST['recipient']
+        email = Email(subject=subject, body=body, sender=sender, recipient=recipient)
+        email.save()
+        email.auto_categorize()
+        return redirect('email_list')
+    return render(request, 'tasks/email_create.html')

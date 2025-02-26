@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>{{ lead.name }}</h1>
+    <p><strong>Email:</strong> {{ lead.email }}</p>
+    <p><strong>Phone:</strong> {{ lead.phone|default:"N/A" }}</p>
+    <p><strong>Source:</strong> {{ lead.source|default:"N/A" }}</p>
+    <p><strong>Status:</strong> {{ lead.status|title }}</p>
+    <p><strong>Assigned To:</strong> {{ lead.assigned_to.username }}</p>
+    <h2>Activity Pipeline</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Date</th>
+                <th>Task</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in activities %}
+                <tr>
+                    <td>{{ activity.get_activity_type_display }}</td>
+                    <td>{{ activity.description|default:"-" }}</td>
+                    <td>{{ activity.date|date:"Y-m-d H:i" }}</td>
+                    <td>{{ activity.task.title|default:"None" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4">No activities yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p><a href="{% url 'marketing:add_activity' lead.id %}">Add Activity</a> | <a href="{% url 'marketing:lead_list' %}">Back</a></p>
+{% endblock %}

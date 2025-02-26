@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Upload Candidate CSV</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Upload CSV</button>
+    </form>
+    <p><a href="{% url 'recruitment:candidate_list' %}">Back</a></p>
+{% endblock %}

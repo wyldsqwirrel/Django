@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Edit Task: {{ task.title }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Title:</label><br><input type="text" name="title" value="{{ task.title }}" required></p>
+        <p><label>Due Date:</label><br><input type="date" name="due_by" value="{{ task.due_by|date:'Y-m-d' }}" required></p>
+        <p><label>Assigned To:</label><br>
+            <select name="assigned_to">
+                {% for user in users %}
+                    <option value="{{ user.id }}" {% if user.id == task.assigned_to.id %}selected{% endif %}>
+                        {{ user.username }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+        <p><label>Related Email:</label><br>
+            <select name="related_email">
+                <option value="">None</option>
+                {% for email in emails %}
+                    <option value="{{ email.id }}" {% if email.id == task.related_email.id %}selected{% endif %}>
+                        {{ email.subject }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+        <p><label>Depends On:</label><br>
+            <select name="depends_on">
+                <option value="">None</option>
+                {% for t in tasks %}
+                    <option value="{{ t.id }}" {% if t.id == task.depends_on.id %}selected{% endif %}>
+                        {{ t.title }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+        <p><label>Follow-Up After (days):</label><br><input type="number" name="follow_up_after" value="{{ task.follow_up_after }}"></p>
+        <p><label>Completed:</label><br><input type="checkbox" name="completed" {% if task.completed_at %}checked{% endif %}></p>
+        <button type="submit">Update</button>
+    </form>
+    <p><a href="{% url 'tasks:task_detail' task.id %}">Back</a></p>
+{% endblock %}

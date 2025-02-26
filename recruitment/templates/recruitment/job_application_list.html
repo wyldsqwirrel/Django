@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Job Applications</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Job</th>
+                <th>Submitted At</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for application in applications %}
+                <tr>
+                    <td>{{ application.full_name }}</td>
+                    <td>{{ application.email }}</td>
+                    <td>{{ application.job.job_title }}</td>
+                    <td>{{ application.submitted_at|date:"Y-m-d" }}</td>
+                    <td>{{ application.status }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">No applications.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p><a href="{% url 'recruitment:job_application_create' %}">Apply for a Job</a></p>
+{% endblock %}

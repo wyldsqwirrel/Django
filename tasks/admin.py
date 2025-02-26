@@ -1,8 +1,15 @@
 from django.contrib import admin
-from .models import Task  # ✅ Import Task model
+from .models import Task, Email
 
-@admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ["name", "status", "due_date"]
-    list_filter = ("status", "due_date")
-    search_fields = ("name", "description")
+    list_display = ['title', 'due_by', 'status', 'completed_at']
+    list_filter = ['status', 'due_by', 'completed_at']
+    search_fields = ['title']
+
+class EmailAdmin(admin.ModelAdmin):
+    list_display = ['subject', 'sender', 'recipient', 'category', 'created_at']
+    list_filter = ['category', 'created_at']
+    search_fields = ['subject', 'sender', 'recipient']
+
+admin.site.register(Task, TaskAdmin)
+admin.site.register(Email, EmailAdmin)

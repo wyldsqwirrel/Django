@@ -41,8 +41,20 @@ class ContactForm(forms.ModelForm):
 class InterviewForm(forms.ModelForm):
     class Meta:
         model = Interview
-        fields = "__all__"
+        fields = '__all__'
 
+    def clean_job_spec(self):
+        file = self.cleaned_data.get('job_spec')
+        if file and not file.name.endswith('.pdf'):
+            raise forms.ValidationError("Only PDF files are allowed.")
+        return file
+
+    def clean_pdf_guides(self):  # Optional: Add similar validation
+        file = self.cleaned_data.get('pdf_guides')
+        if file and not file.name.endswith('.pdf'):
+            raise forms.ValidationError("Only PDF files are allowed.")
+        return file
+    
 
 class JobForm(forms.ModelForm):
     class Meta:

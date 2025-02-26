@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Tasks</h2>
+    <ul>
+        {% for task in tasks %}
+            <li>{{ task.title }} (Due: {{ task.due_by|date:"Y-m-d" }})</li>
+        {% empty %}
+            <li>No tasks available.</li>
+        {% endfor %}
+    </ul>
+
+    <!-- Eisenhower Matrix for Emails -->
+    <h2>Email Eisenhower Matrix</h2>
+    <div id="eisenhower-board" style="display: flex; gap: 20px;">
+        {% for category in "urgent_important,important_not_urgent,urgent_not_important,not_urgent_not_important" %}
+            <div class="kanban-column" data-category="{{ category }}">
+                <h3>{{ category|replace:"_"|title }}</h3>
+                {% for email in emails %}
+                    {% if email.category == category %}
+                        <div class="email-card" draggable="true" data-id="{{ email.id }}">
+                            {{ email.subject }}<br>
+                            {{ email.created_at|date:"Y-m-d" }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Kanban Board for Tasks -->
+    <h2>Task Kanban Board</h2>
+    <div id="kanban-board" style="display: flex; gap: 20px;">
+        {% for status, task_list in kanban_tasks.items %}
+            <div class="kanban-column" data-status="{{ status }}">
+                <h3>{{ status|replace:"_"|title }}</h3>
+                {% for task in task_list %}
+                    <div class="task-card" draggable="true" data-id="{{ task.id }}">
+                        {{ task.title }}<br>
+                        Due: {{ task.due_by|date:"Y-m-d" }}<br>
+                        <a href="{% url 'tasks:task_detail' task.id %}">View</a>
+                    </div>
+                {% empty %}
+                    <p>No tasks in this column.</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <p><a href="{% url 'tasks:task_create' %}">Add Task</a> | <a href="{% url 'tasks:email_list' %}">View Emails</a></p>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrfToken = getCookie('csrftoken');
+
+        // Email Drag-and-Drop (Eisenhower)
+        document.querySelectorAll('.email-card').forEach(card => {
+            card.addEventListener('dragstart', e => e.dataTransfer.setData('text', card.dataset.id));
+        });
+        document.querySelectorAll('#eisenhower-board .kanban-column').forEach(column => {
+            column.addEventListener('dragover', e => e.preventDefault());
+            column.addEventListener('drop', e => {
+                e.preventDefault();
+                const emailId = e.dataTransfer.getData('text');
+                const newCategory = column.dataset.category;
+                fetch(`/tasks/update_email_category/${emailId}/${newCategory}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+                    if (response.ok) location.reload();
+                });
+            });
+        });
+
+        // Task Drag-and-Drop (Kanban)
+        document.querySelectorAll('.task-card').forEach(card => {
+            card.addEventListener('dragstart', e => e.dataTransfer.setData('text', card.dataset.id));
+        });
+        document.querySelectorAll('#kanban-board .kanban-column').forEach(column => {
+            column.addEventListener('dragover', e => e.preventDefault());
+            column.addEventListener('drop', e => {
+                e.preventDefault();
+                const taskId = e.dataTransfer.getData('text');
+                const newStatus = column.dataset.status;
+                fetch(`/tasks/update_task_status/${taskId}/${newStatus}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+                    if (response.ok) location.reload();
+                });
+            });
+        });
+    </script>
+{% endblock %}

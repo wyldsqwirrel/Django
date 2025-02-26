@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Add Activity for {{ lead.name }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Activity Type:</label><br>
+            <select name="activity_type" required>
+                <option value="identified">Lead Identified</option>
+                <option value="linkedin_request">LinkedIn Connection Request</option>
+                <option value="linkedin_connected">LinkedIn Connected</option>
+                <option value="email_sent">Email Sent</option>
+                <option value="call_made">Call Made</option>
+                <option value="meeting_scheduled">Meeting Scheduled</option>
+                <option value="meeting_held">Meeting Held</option>
+                <option value="deal_proposed">Deal Proposed</option>
+                <option value="deal_closed">Deal Closed</option>
+                <option value="lost">Lost</option>
+            </select>
+        </p>
+        <p><label>Description:</label><br><textarea name="description"></textarea></p>
+        <button type="submit">Add Activity</button>
+    </form>
+    <p><a href="{% url 'marketing:lead_detail' lead.id %}">Back</a></p>
+{% endblock %}

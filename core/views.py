@@ -1,140 +1,65 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required  # ✅ Import added
-from django.contrib.auth.views import LoginView
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django.template.exceptions import TemplateDoesNotExist
 import logging
-from tasks.models import Task
-from recruitment.models import Candidate, Company
-from django.conf import settings
+from tasks.models import Task, Email
+from marketing.models import Lead, Activity
+from recruitment.models import Job, Candidate, Placement
+from django.db.models import Q
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
 
 logger = logging.getLogger(__name__)
 
-# ----------------
-#   HOME VIEW
-# ----------------
+@login_required
 def home(request):
-    if request.user.is_authenticated:
-        message = f"Welcome to Nutcrakka, {request.user.username}!"
-    else:
-        message = "Welcome to Nutcrakka! Please log in."
+    tasks = Task.objects.filter(completed_at__isnull=True).order_by("due_by")[:5]
+    context = {"user": request.user, "tasks": tasks}
+    return render(request, "home.html", context)
 
-    return render(request, "core/home.html", {"message": message})  # ✅ Ensure home.html exists
-
-
-# ----------------
-#   SIGNUP VIEW
-# ----------------
-def signup(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("login")  # Redirect to login after signup
-    else:
-        form = UserCreationForm()
-
-    return render(request, "core/signup.html", {"form": form})
-
-# -----------------
-#   LOGIN VIEW
-# -----------------
-def login(request):
-    """
-    Render the login page.
-    """
-    try:
-        return render(request, "auth/login.html", {})
-    except TemplateDoesNotExist as e:
-        logger.warning(f"Template missing: {e}")
-        return render(
-            request, "crm/error.html", {"error_message": "Login template not found."}
-        )
-
-
-# ----------------
-#   DASHBOARD VIEW (Fixed)
-# ----------------
-@login_required # ✅ Now correctly imported
+@login_required
 def dashboard(request):
-    """
-    Render the global dashboard with data from multiple models.
-    Handles missing templates gracefully.
-    """
     try:
-        tasks = Task.objects.filter(user=request.user, completed__at=False).order_by("due_by")
-
-        candidate_limit = getattr(settings, "DASHBOARD_CANDIDATE_LIMIT", 5)
-        company_limit = getattr(settings, "DASHBOARD_COMPANY_LIMIT", 5)
-
-        candidates = Candidate.objects.all().order_by("-created_at")[:candidate_limit]
-        companies = Company.objects.all().order_by("-created_at")[:company_limit]
-
+        tasks = Task.objects.filter(completed_at__isnull=True).order_by("due_by")[:5]
+        all_tasks = Task.objects.all().order_by("due_by")
+        emails = Email.objects.all().order_by("-created_at")[:5]
+        email_categories = {
+            'urgent_important': Email.objects.filter(category='urgent_important'),
+            'important_not_urgent': Email.objects.filter(category='important_not_urgent'),
+            'urgent_not_important': Email.objects.filter(category='urgent_not_important'),
+            'not_urgent_not_important': Email.objects.filter(category='not_urgent_not_important'),
+        }
+        leads = Lead.objects.all().order_by("-created_at")[:5]
+        activities = Activity.objects.all().order_by("-date")[:5]
+        all_activities = Activity.objects.all().order_by("date")
+        jobs = Job.objects.all().order_by("-created_at")[:5]
+        candidates = Candidate.objects.all().order_by("-created_at")[:5]
+        placements = Placement.objects.all().order_by("-created_at")[:5]
         context = {
             "user": request.user,
             "tasks": tasks,
+            "all_tasks": all_tasks,
+            "emails": emails,
+            "email_categories": email_categories,
+            "leads": leads,
+            "activities": activities,
+            "all_activities": all_activities,
+            "jobs": jobs,
             "candidates": candidates,
-            "companies": companies,
+            "placements": placements,
         }
-
-        return render(request, "core/dashboard.html", context)  # ✅ Correct template path
-
+        return render(request, "dashboard.html", context)  # Updated to "dashboard.html"
     except TemplateDoesNotExist as e:
         logger.warning(f"Template missing: {e}")
-        return render(
-            request,
-            "crm/error.html",
-            {"error_message": "Dashboard template not found."},
-        )
+        return render(request, "crm/error.html", {"error_message": "Dashboard template not found."})
 
-# ----------------
-#   LOGOUT VIEW
-# ----------------
-def logout_view(request):
-    logout(request)
-    return redirect("login")  # Redirect users to login after logout
-
-def apply_for_job(request, job_id):
-    job = Job.objects.get(id=job_id)
-
-    if request.method == "POST":
-        form = JobApplicationForm(request.POST)
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
         if form.is_valid():
-            application = form.save(commit=False)
-            application.job = job
-            application.save()
-
-            # Send confirmation email asynchronously via Celery
-            send_email_task.delay(
-                application.email, "Your job application has been received!"
-            )
-
-            messages.success(request, "Application submitted successfully!")
-            return redirect("job_applied")
+            user = form.save()
+            login(request, user)
+            return redirect('home')
     else:
-        form = JobApplicationForm()
-
-    return render(request, "core/apply_for_job.html", {"form": form, "job": job})
-
-
-from tasks.tasks import process_pending_applications  # Celery background task
-
-
-
-# -----------------
-#   HELPER FUNCTION
-# -----------------
-def get_user_emails(user):
-    return [
-        {
-            "subject": "Welcome!",
-            "sender": "admin@example.com",
-            "received_at": "2025-01-01 10:00",
-        },
-        {
-            "subject": "New Tasks Assigned",
-            "sender": "tasks@example.com",
-            "received_at": "2025-01-02 14:00",
-        },
-    ]
-
-
+        form = UserCreationForm()
+    return render(request, 'core/signup.html', {'form': form})

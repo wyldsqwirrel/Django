@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Create New Lead</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Name:</label><br><input type="text" name="name" required></p>
+        <p><label>Email:</label><br><input type="email" name="email" required></p>
+        <p><label>Phone:</label><br><input type="text" name="phone"></p>
+        <p><label>Source:</label><br><input type="text" name="source"></p>
+        <button type="submit">Save Lead</button>
+    </form>
+    <p><a href="{% url 'marketing:lead_list' %}">Back</a></p>
+{% endblock %}

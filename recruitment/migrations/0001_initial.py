@@ -61,16 +61,7 @@ class Migration(migrations.Migration):
                 ("created_on", models.DateTimeField(auto_now_add=True)),
                 ("modified_on", models.DateTimeField(auto_now=True)),
                 ("linkedin", models.URLField(blank=True, null=True)),
-                (
-                    "cv",
-                    models.CharField(
-                        blank=True,
-                        default=recruitment.models.get_default_cv,
-                        max_length=50,
-                        null=True,
-                        unique=True,
-                    ),
-                ),
+                ('cv', models.FileField(blank=True, null=True, upload_to='recruitment/csv/')),
             ],
         ),
         migrations.CreateModel(

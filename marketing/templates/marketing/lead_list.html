@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Marketing Leads</h2>
+    <ul>
+        {% for lead in leads %}
+            <li>{{ lead.name }} ({{ lead.email }})</li>
+        {% empty %}
+            <li>No leads available.</li>
+        {% endfor %}
+    </ul>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lead in leads %}
+                <tr>
+                    <td>{{ lead.name }}</td>
+                    <td>{{ lead.email }}</td>
+                    <td>{{ lead.status|title }}</td>
+                    <td>{{ lead.assigned_to.username }}</td>
+                    <td><a href="{% url 'marketing:lead_detail' lead.id %}">View</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">No leads available.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p><a href="{% url 'marketing:lead_create' %}">Add New Lead</a></p>
+{% endblock %}

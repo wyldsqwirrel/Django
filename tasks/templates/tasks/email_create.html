@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Create New Email</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Subject:</label><br><input type="text" name="subject" required></p>
+        <p><label>Body:</label><br><textarea name="body" required></textarea></p>
+        <p><label>Sender:</label><br><input type="email" name="sender" required></p>
+        <p><label>Recipient:</label><br><input type="email" name="recipient" required></p>
+        <button type="submit">Save</button>
+    </form>
+    <p><a href="{% url 'tasks:email_list' %}">Back</a></p>
+{% endblock %}

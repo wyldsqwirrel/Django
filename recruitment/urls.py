@@ -3,7 +3,7 @@ from . import views
 
 app_name = 'recruitment'
 urlpatterns = [
-    path('jobs/', views.job_list, name='job_list'),  # Matches your earlier setup
+    path('', views.job_list, name='job_list'),  # Matches your earlier setup
     path('candidates/', views.candidate_list, name='candidate_list'),
     path('candidates/create/', views.candidate_create, name='candidate_create'),
     path('companies/', views.company_list, name='company_list'),

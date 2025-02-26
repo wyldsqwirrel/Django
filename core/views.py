@@ -48,7 +48,7 @@ def dashboard(request):
             "candidates": candidates,
             "placements": placements,
         }
-        return render(request, "dashboard.html", context)  # Updated to "dashboard.html"
+        return render(request, "dashboard.html", context)  # Changed to "dashboard.html"
     except TemplateDoesNotExist as e:
         logger.warning(f"Template missing: {e}")
         return render(request, "crm/error.html", {"error_message": "Dashboard template not found."})

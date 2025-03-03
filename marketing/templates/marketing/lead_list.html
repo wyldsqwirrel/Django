@@ -14,7 +14,6 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Status</th>
-                <th>Assigned To</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -24,7 +23,6 @@
                     <td>{{ lead.name }}</td>
                     <td>{{ lead.email }}</td>
                     <td>{{ lead.status|title }}</td>
-                    <td>{{ lead.assigned_to.username }}</td>
                     <td><a href="{% url 'marketing:lead_detail' lead.id %}">View</a></td>
                 </tr>
             {% empty %}

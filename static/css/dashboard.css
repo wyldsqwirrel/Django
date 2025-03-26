@@ -1,0 +1,62 @@
+/* Widgets */
+.widget {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.widget h2 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+
+.widget ul {
+    list-style: none;
+    padding: 0;
+}
+
+.widget ul li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.widget ul li:last-child {
+    border-bottom: none;
+}
+
+/* Pomodoro Styles */
+.pomodoro {
+    text-align: center;
+}
+
+.pomodoro-time {
+    font-size: 2em;
+    margin: 20px 0;
+}
+
+.pomodoro button {
+    background: #005fcc;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.pomodoro button:hover {
+    background: #0041a8;
+}
+
+/* Calendar Styles */
+.calendar {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.calendar .fc {
+    border: none;
+}

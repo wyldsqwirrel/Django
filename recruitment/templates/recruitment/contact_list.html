@@ -1,0 +1,15 @@
+{% extends 'recruitment/base.html' %}
+
+{% block title %}Contacts{% endblock %}
+
+{% block content %}
+    <h2>Contacts</h2>
+    <a href="{% url 'contact_create' %}">Add New Contact</a>
+    <ul>
+        {% for contact in contacts %}
+            <li>{{ contact.full_name }} - {{ contact.email }}</li>
+        {% empty %}
+            <li>No ccontacts found.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

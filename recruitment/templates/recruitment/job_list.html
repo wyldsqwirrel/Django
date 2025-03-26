@@ -1,0 +1,15 @@
+{% extends 'recruitment/base.html' %}
+
+{% block title %}Jobs{% endblock %}
+
+{% block content %}
+    <h2>Jobs</h2>
+    <a href="{% url 'job_create' %}">Add New Job</a>
+    <ul>
+        {% for job in jobs %}
+            <li>{{ job.title }} - {{ contact }}</li>
+        {% empty %}
+            <li>No jobs found.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

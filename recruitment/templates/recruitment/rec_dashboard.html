@@ -1,0 +1,120 @@
+<!-- recruitment/templates/recruitment/dashboard.html -->
+{% extends 'core/base.html' %}
+
+{% block title %}Recruitment Dashboard{% endblock %}
+
+{% block extra_styles %}
+    <style>
+        body { background-color: #f8f9fa; }
+        .dashboard-container { padding: 20px; }
+        .widget {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container dashboard-container">
+    <h1 class="mb-4">Recruitment Dashboard</h1>
+    <p>Manage your recruitment process efficiently.</p>
+
+    <div class="row">
+        <!-- Recent Candidates -->
+        <div class="col-md-6">
+            <div class="widget">
+                <h3>Recent Candidates</h3>
+                <ul class="list-group">
+                    {% for candidate in candidates %}
+                        <li class="list-group-item">
+                            <strong>{{ candidate.full_name }}</strong> ({{ candidate.job_title }})
+                            <small class="text-muted d-block">Added: {{ candidate.created_on|date:"Y-m-d" }}</small>
+                            <a href="{% url 'recruitment:candidate_detail' candidate.id %}" class="btn btn-sm btn-primary mt-1">View</a>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No recent candidates.</li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'recruitment:candidate_list' %}" class="btn btn-primary mt-3">View All Candidates</a>
+            </div>
+        </div>
+
+        <!-- Open Jobs -->
+        <div class="col-md-6">
+            <div class="widget">
+                <h3>Open Jobs</h3>
+                <ul class="list-group">
+                    {% for job in open_jobs %}
+                        <li class="list-group-item">
+                            <strong>{{ job.title }}</strong> at {{ job.company.name }}
+                            <small class="text-muted d-block">Status: {{ job.job_status }}</small>
+                            <a href="{% url 'recruitment:job_detail' job.id %}" class="btn btn-sm btn-primary mt-1">View</a>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No open jobs.</li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'recruitment:job_list' %}" class="btn btn-primary mt-3">View All Jobs</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Companies -->
+        <div class="col-md-6">
+            <div class="widget">
+                <h3>Recent Companies</h3>
+                <ul class="list-group">
+                    {% for company in companies %}
+                        <li class="list-group-item">
+                            <strong>{{ company.name }}</strong>
+                            <small class="text-muted d-block">Added: {{ company.created_on|date:"Y-m-d" }}</small>
+                            <a href="{% url 'recruitment:company_detail' company.id %}" class="btn btn-sm btn-primary mt-1">View</a>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No recent companies.</li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'recruitment:company_list' %}" class="btn btn-primary mt-3">View All Companies</a>
+            </div>
+        </div>
+
+        <!-- Upcoming Interviews -->
+        <div class="col-md-6">
+            <div class="widget">
+                <h3>Upcoming Interviews (Next 7 Days)</h3>
+                <ul class="list-group">
+                    {% for interview in upcoming_interviews %}
+                        <li class="list-group-item">
+                            <strong>{{ interview.candidate.full_name }}</strong> for {{ interview.job.title }}
+                            <small class="text-muted d-block">Scheduled: {{ interview.scheduled_date|date:"Y-m-d H:i" }}</small>
+                            <a href="{% url 'recruitment:interview_detail' interview.id %}" class="btn btn-sm btn-primary mt-1">View</a>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No upcoming interviews.</li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'recruitment:interview_list' %}" class="btn btn-primary mt-3">View All Interviews</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Access Links -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="widget">
+                <h3>Quick Access</h3>
+                <a href="{% url 'recruitment:candidate_list' %}" class="btn btn-primary">View Candidates</a>
+                <a href="{% url 'recruitment:job_list' %}" class="btn btn-primary">View Jobs</a>
+                <a href="{% url 'recruitment:company_list' %}" class="btn btn-primary">View Companies</a>
+                <a href="{% url 'recruitment:interview_list' %}" class="btn btn-primary">View Interviews</a>
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'core:home' %}" class="btn btn-secondary mt-3">Cancel</a>
+</div>
+{% endblock %}

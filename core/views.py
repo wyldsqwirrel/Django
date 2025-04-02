@@ -1,140 +1,87 @@
+# core/views.py
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required  # ✅ Import added
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.decorators import login_required
 from django.template.exceptions import TemplateDoesNotExist
-import logging
-from tasks.models import Task
-from recruitment.models import Candidate, Company
-from django.conf import settings
+from core.utils import get_pomodoro_context
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import requests
+import os
 
-logger = logging.getLogger(__name__)
-
-# ----------------
-#   HOME VIEW
-# ----------------
-def home(request):
-    if request.user.is_authenticated:
-        message = f"Welcome to Nutcrakka, {request.user.username}!"
-    else:
-        message = "Welcome to Nutcrakka! Please log in."
-
-    return render(request, "core/home.html", {"message": message})  # ✅ Ensure home.html exists
-
-
-# ----------------
-#   SIGNUP VIEW
-# ----------------
-def signup(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("login")  # Redirect to login after signup
-    else:
-        form = UserCreationForm()
-
-    return render(request, "core/signup.html", {"form": form})
-
-# -----------------
-#   LOGIN VIEW
-# -----------------
-def login(request):
-    """
-    Render the login page.
-    """
-    try:
-        return render(request, "auth/login.html", {})
-    except TemplateDoesNotExist as e:
-        logger.warning(f"Template missing: {e}")
-        return render(
-            request, "crm/error.html", {"error_message": "Login template not found."}
-        )
-
-
-# ----------------
-#   DASHBOARD VIEW (Fixed)
-# ----------------
-@login_required # ✅ Now correctly imported
+@login_required
 def dashboard(request):
     """
-    Render the global dashboard with data from multiple models.
-    Handles missing templates gracefully.
+    Dashboard view for the core app, displaying a summary and navigation links.
     """
     try:
-        tasks = Task.objects.filter(user=request.user, completed__at=False).order_by("due_by")
-
-        candidate_limit = getattr(settings, "DASHBOARD_CANDIDATE_LIMIT", 5)
-        company_limit = getattr(settings, "DASHBOARD_COMPANY_LIMIT", 5)
-
-        candidates = Candidate.objects.all().order_by("-created_at")[:candidate_limit]
-        companies = Company.objects.all().order_by("-created_at")[:company_limit]
-
         context = {
-            "user": request.user,
-            "tasks": tasks,
-            "candidates": candidates,
-            "companies": companies,
+            'pomodoro': get_pomodoro_context(),
         }
-
-        return render(request, "core/dashboard.html", context)  # ✅ Correct template path
-
+        return render(request, 'core/dashboard.html', context)
     except TemplateDoesNotExist as e:
-        logger.warning(f"Template missing: {e}")
-        return render(
-            request,
-            "crm/error.html",
-            {"error_message": "Dashboard template not found."},
-        )
+        return render(request, 'core/error.html', {'error_message': 'Dashboard template not found.'})
 
-# ----------------
-#   LOGOUT VIEW
-# ----------------
-def logout_view(request):
-    logout(request)
-    return redirect("login")  # Redirect users to login after logout
+def home(request):
+    """
+    Home view for the core app, serving as the landing page.
+    """
+    try:
+        context = {
+            'pomodoro': get_pomodoro_context(),
+        }
+        return render(request, 'core/home.html', context)
+    except TemplateDoesNotExist as e:
+        return render(request, 'core/error.html', {'error_message': 'Home template not found.'})
 
-def apply_for_job(request, job_id):
-    job = Job.objects.get(id=job_id)
+class LinkedInProfileSearchAPIView(APIView):
+    """
+    API endpoint to search for LinkedIn profiles and fetch their URLs.
+    """
+    def get(self, request):
+        # Get the search query from the request (e.g., person's name)
+        query = request.query_params.get('query', None)
 
-    if request.method == "POST":
-        form = JobApplicationForm(request.POST)
-        if form.is_valid():
-            application = form.save(commit=False)
-            application.job = job
-            application.save()
-
-            # Send confirmation email asynchronously via Celery
-            send_email_task.delay(
-                application.email, "Your job application has been received!"
+        if not query:
+            return Response(
+                {"error": "Query parameter 'query' is required."},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-            messages.success(request, "Application submitted successfully!")
-            return redirect("job_applied")
-    else:
-        form = JobApplicationForm()
+        # Proxycurl API configuration
+        api_key = os.getenv('PROXYCURL_API_KEY')  # Store your API key in environment variables
+        if not api_key:
+            return Response(
+                {"error": "Proxycurl API key not configured."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-    return render(request, "core/apply_for_job.html", {"form": form, "job": job})
+        # Proxycurl Person Search Endpoint
+        url = "https://nubela.co/proxycurl/api/linkedin/profile/search"
+        headers = {
+            'Authorization': f'Bearer {api_key}'
+        }
+        params = {
+            'keyword': query,  # Search by keyword (e.g., person's name)
+            'limit': 5,  # Limit to 5 results
+        }
 
+        try:
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()  # Raise an error for bad status codes
+            data = response.json()
 
-from tasks.tasks import process_pending_applications  # Celery background task
+            # Extract LinkedIn profile URLs from the response
+            profiles = data.get('profiles', [])
+            profile_urls = [profile.get('linkedin_profile_url') for profile in profiles if profile.get('linkedin_profile_url')]
 
+            return Response(
+                {"linkedin_urls": profile_urls},
+                status=status.HTTP_200_OK
+            )
 
-
-# -----------------
-#   HELPER FUNCTION
-# -----------------
-def get_user_emails(user):
-    return [
-        {
-            "subject": "Welcome!",
-            "sender": "admin@example.com",
-            "received_at": "2025-01-01 10:00",
-        },
-        {
-            "subject": "New Tasks Assigned",
-            "sender": "tasks@example.com",
-            "received_at": "2025-01-02 14:00",
-        },
-    ]
-
-
+        except requests.exceptions.RequestException as e:
+            return Response(
+                {"error": f"Failed to fetch LinkedIn profiles: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

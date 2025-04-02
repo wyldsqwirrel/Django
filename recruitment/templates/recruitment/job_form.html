@@ -1,0 +1,38 @@
+<!-- recruitment/templates/recruitment/job_form.html -->
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Create a New Job</h1>
+    <p><strong>Note:</strong> Upon creation, this job may be posted to WordPress if not archived.</p>
+    <form method="post" action="{% url 'recruitment:job_create' %}">
+        {% csrf_token %}
+        
+        <!-- Job ID (auto-generated, display only) -->
+        <div class="form-group">
+            <label for="job_id">Job ID</label>
+            <input type="text" class="form-control" id="job_id" name="job_id" value="Auto-generated (e.g., JOB-{{ next_job_id }})" disabled>
+        </div>
+
+        <!-- Render the form fields -->
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                {% endif %}
+                {% for error in field.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary">Create Job</button>
+        <a href="{% url 'recruitment:job_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+<style> [CSS omitted for brevity] </style>
+{% endblock %}

@@ -1,0 +1,28 @@
+<!-- core/templates/core/note_form.html -->
+{% extends 'base.html' %}
+
+{% block title %}Create Note{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Create Note</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <input type="text" name="title" id="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">Content (Text)</label>
+            <textarea name="content" id="content" class="form-control" rows="5"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="handwritten_image" class="form-label">Handwritten Note (Image)</label>
+            <input type="file" name="handwritten_image" id="handwritten_image" class="form-control" accept="image/*">
+        </div>
+        <button type="submit" class="btn btn-primary">Save Note</button>
+        <a href="{% url 'core:productivity_dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+

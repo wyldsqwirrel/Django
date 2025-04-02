@@ -1,3 +1,4 @@
+# recruitment/models.py
 from django.contrib.auth.models import User
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
@@ -6,9 +7,10 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.conf import settings  # ✅ Required for WordPress API
-import requests  # ✅ Required for API call
-
+from django.conf import settings
+import requests
+import csv
+import os
 
 GENDER_CHOICES = [
     ("Male", "Male"),
@@ -16,27 +18,21 @@ GENDER_CHOICES = [
     ("Other", "Other"),
 ]
 
-import csv
-import os
-
-
 def get_default_cv():
     """Fetches the first CV ID from attachments.csv"""
     csv_path = os.path.join(settings.BASE_DIR, "recruitment/csv/attachments.csv")
-
     try:
         with open(csv_path, newline="", encoding="utf-8") as csvfile:
-            reader = csv.DictReader(csvfile)  # Read CSV as dictionary
+            reader = csv.DictReader(csvfile)
             for row in reader:
-                return row["id"]  # ✅ Return the first available CV ID
+                return row["id"]
     except (FileNotFoundError, KeyError):
-        return None  # If no file or missing column, return None
+        return None
 
 def get_default_job():
     """Returns the first available Job ID or None if no jobs exist."""
-    from recruitment.models import Job  # Avoid circular import issues
+    from recruitment.models import Job
     return Job.objects.first().id if Job.objects.exists() else None
-
 
 JOB_TYPE_CHOICES = [
     ("Full-time", "Full-time"),
@@ -54,6 +50,15 @@ CANDIDATE_STATUS_CHOICES = [
     ("no_contact", "Do not contact")
 ]
 
+class Event(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
 
 # Candidate Model
 class Candidate(models.Model):
@@ -75,11 +80,8 @@ class Candidate(models.Model):
     recent_employer = models.CharField(max_length=100)
     job_title = models.CharField(max_length=100)
     salary = models.DecimalField(max_digits=10, decimal_places=2)
-    prefs = models.CharField(
-        max_length=50, choices=JOB_TYPE_CHOICES, default="Freelance"
-     )
-
-    candidate_status = models.CharField(max_length=50,choices=CANDIDATE_STATUS_CHOICES)
+    prefs = models.CharField(max_length=50, choices=JOB_TYPE_CHOICES, default="Freelance")
+    candidate_status = models.CharField(max_length=50, choices=CANDIDATE_STATUS_CHOICES)
     skills = models.TextField()
     industry = models.CharField(max_length=100)
     archived = models.BooleanField(default=False)
@@ -87,6 +89,8 @@ class Candidate(models.Model):
     modified_on = models.DateTimeField(auto_now=True)
     linkedin = models.URLField(blank=True, null=True)
     cv = models.CharField(max_length=50, unique=True, default=get_default_cv, null=True, blank=True)
+    cv_file = models.FileField(upload_to="CVs/", null=True, blank=True)  # Added for CV file storage
+    notes = models.TextField(blank=True, null=True)
 
 # Company Model
 class Company(models.Model):
@@ -104,10 +108,10 @@ class Company(models.Model):
     archived = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
-
 
 # Contact Model
 class Contact(models.Model):
@@ -127,13 +131,7 @@ class Contact(models.Model):
     def __str__(self):
         return self.full_name
 
-
 # Job Model
-from django.db import models
-from django.conf import settings  # ✅ Required for WordPress API
-import requests  # ✅ Required for API call
-
-
 JOB_STATUS_CHOICES = [
     ("Briefed", "Briefed"),
     ("Interview_One", "Interview One"),
@@ -150,9 +148,7 @@ class Job(models.Model):
     contact = models.ForeignKey("Contact", on_delete=models.CASCADE)
     job_title = models.CharField(max_length=200)
     job_type = models.CharField(max_length=50, choices=JOB_TYPE_CHOICES)
-    job_status = models.CharField(
-        max_length=50, choices=JOB_STATUS_CHOICES, default="Briefed"
-    )
+    job_status = models.CharField(max_length=50, choices=JOB_STATUS_CHOICES, default="Briefed")
     experience_level = models.CharField(max_length=50)
     location = models.CharField(max_length=255)
     skills_required = models.TextField()
@@ -160,32 +156,24 @@ class Job(models.Model):
     archived = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
-    salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # ✅ Salary for perm jobs
-    rate = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)  # ✅ Hourly/daily rate for temp jobs
-    commission_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=10.00)  # ✅ Default to 10%
+    salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    rate = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
+    commission_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=10.00)
 
     def calculate_fee(self):
-        """Calculates the fee as a percentage of the salary (for permanent jobs)."""
         if self.salary and self.commission_percentage:
             return (self.salary * self.commission_percentage) / 100
         return 0.00
 
     def calculate_temp_fee(self):
-        """Calculates the fee as a percentage of the day rate (for temporary jobs)."""
         if self.rate and self.commission_percentage:
             return (self.rate * self.commission_percentage) / 100
         return 0.00
 
     def post_to_wordpress(self):
-        """
-        Posts the job to WordPress via REST API.
-        """
         wp_api_url = f"{settings.WORDPRESS_API_URL}/wp-json/wp/v2/jobs"
         auth = (settings.WORDPRESS_USER, settings.WORDPRESS_APP_PASSWORD)
-
-        # ✅ Ensure only `salary` is posted (not rate)
         salary_display = f"<p><strong>Salary:</strong> ${self.salary:,.2f}</p>" if self.salary else ""
-
         data = {
             "title": self.job_title,
             "content": f"""
@@ -195,7 +183,6 @@ class Job(models.Model):
             """,
             "status": "publish" if not self.archived else "draft",
         }
-
         try:
             response = requests.post(wp_api_url, auth=auth, json=data)
             response.raise_for_status()
@@ -204,9 +191,7 @@ class Job(models.Model):
             return f"Failed to post job: {str(e)}"
 
     def __str__(self):
-        return self.job_title  # ✅ Only keep one `__str__()` method
-
-
+        return self.job_title
 
 class JobApplication(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applications")
@@ -223,7 +208,6 @@ class JobApplication(models.Model):
 
     def __str__(self):
         return f"Application for {self.job.job_title} - {self.full_name}"
-
 
 # Interview Model
 INTERVIEW_TYPE_CHOICES = [
@@ -246,20 +230,11 @@ INTERVIEW_STATUS_CHOICES = [
     ("NO_SHOW", "No Show"),
 ]
 
-
 class Interview(models.Model):
     interview_id = models.AutoField(primary_key=True)
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="interviews")
-    candidate = models.ForeignKey(
-        Candidate, on_delete=models.CASCADE, related_name="interviews"
-    )
-    interviewer = models.ForeignKey(
-        Contact,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="interviews",
-    )
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name="interviews")
+    interviewer = models.ForeignKey(Contact, on_delete=models.SET_NULL, null=True, blank=True, related_name="interviews")
     interview_type = models.CharField(max_length=3, choices=INTERVIEW_TYPE_CHOICES)
     scheduled_date = models.DateTimeField(default=now)
     stage = models.CharField(max_length=3, choices=INTERVIEW_STAGE_CHOICES)
@@ -267,41 +242,35 @@ class Interview(models.Model):
     feedback = models.TextField(null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Interview {self.interview_id}: {self.job.job_title} | Candidate: {self.candidate.full_name}"
 
 class Placement(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE)
-    candidate = models.ForeignKey(
-        Candidate, on_delete=models.CASCADE, null=True, blank=True
-    )
-    company = models.ForeignKey(
-        Company, on_delete=models.CASCADE, null=True, blank=True
-    )
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, null=True, blank=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
     placement_code = models.CharField(max_length=50, blank=True, unique=True)
     placement_type = models.CharField(
         max_length=15,
-        choices=JOB_TYPE_CHOICES,  # Reuse the same choices
+        choices=JOB_TYPE_CHOICES,
         verbose_name="Placement Type",
         default="Freelance",
     )
     start_date = models.DateField(null=True, blank=True)
     permanent_base_salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    day_rate = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)  # ✅ Fix rate precision
-    commission_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=10.00)  # Default 15%
-
+    day_rate = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    commission_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=10.00)
     contract_start_date = models.DateField(null=True, blank=True)
     contract_end_date = models.DateField(null=True, blank=True)
 
     def calculate_fee(self):
-        """Calculates the fee as a percentage of the permanent salary."""
         if self.permanent_base_salary and self.commission_percentage:
             return (self.permanent_base_salary * self.commission_percentage) / 100
         return 0.00
 
     def calculate_temp_fee(self):
-        """Calculates the fee as a percentage of the daily rate."""
         if self.day_rate and self.commission_percentage:
             return (self.day_rate * self.commission_percentage) / 100
         return 0.00

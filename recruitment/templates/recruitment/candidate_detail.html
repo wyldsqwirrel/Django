@@ -1,0 +1,44 @@
+<!-- recruitment/templates/recruitment/candidate_detail.html -->
+{% extends 'core/base.html' %}
+
+{% block title %}Candidate: {{ candidate.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ candidate.full_name }}</h1>
+    <p><strong>Job Title:</strong> {{ candidate.job_title }}</p>
+    <p><strong>Email:</strong> {{ candidate.email }}</p>
+    <p><strong>Phone:</strong> {{ candidate.mobile }}</p>
+    <p><strong>Created On:</strong> {{ candidate.created_on|date:"Y-m-d" }}</p>
+
+    <!-- CV View -->
+    <div class="mt-4">
+        <h3>Curriculum Vitae</h3>
+        {% if cv_data %}
+            <p><strong>Filename:</strong> {{ cv_data.filename }}</p>
+            <p><strong>Uploaded At:</strong> {{ cv_data.uploaded_at }}</p>
+            <div class="card">
+                <div class="card-body">
+                    <pre>{{ cv_data.content }}</pre>
+                </div>
+            </div>
+        {% else %}
+            <p>No CV available for this candidate.</p>
+        {% endif %}
+    </div>
+
+    <!-- Notes Section -->
+    <div class="mt-4">
+        <h3>Notes</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <textarea name="notes" class="form-control" rows="5">{{ candidate.notes|default_if_none:"" }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Notes</button>
+        </form>
+    </div>
+
+    <a href="{% url 'recruitment:candidate_list' %}" class="btn btn-secondary mt-3">Cancel</a>
+</div>
+{% endblock %}

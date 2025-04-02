@@ -1,0 +1,27 @@
+<!-- recruitment/templates/recruitment/company_detail.html -->
+{% extends 'core/base.html' %}
+
+{% block title %}Company: W{{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ company.name }}</h1>
+    <p><strong>Contact Email:</strong> {{ company.email }}</p>
+    <p><strong>Contact Phone:</strong> {{ company.phone }}</p>
+    <p><strong>Created On:</strong> {{ company.created_on|date:"Y-m-d" }}</p>
+
+    <!-- Notes Section -->
+    <div class="mt-4">
+        <h3>Notes</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <textarea name="notes" class="form-control" rows="5">{{ company.notes|default_if_none:"" }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Notes</button>
+        </form>
+    </div>
+
+    <a href="{% url 'recruitment:company_list' %}" class="btn btn-secondary mt-3">Cancel</a>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+<!-- recruitment/templates/recruitment/job_detail.html -->
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Job Details: {{ job.title }}</h1>
+    <p><strong>Job ID:</strong> {{ job.job_id }}</p>
+    <p><strong>Status:</strong> {{ job.job_status }}</p>
+    <p><strong>Description:</strong> {{ job.description }}</p>
+    <p><strong>Commission Percentage:</strong> {{ job.commission_percentage }}%</p>
+    <p><strong>Archived:</strong> {{ job.archived|yesno:"Yes,No" }}</p>
+    <a href="{% url 'productivity:notes_job' job.id %}" class="btn btn-info">View Notes</a>
+    <a href="{% url 'recruitment:job_list' %}" class="btn btn-secondary">Cancel</a>
+</div>
+{% endblock %}

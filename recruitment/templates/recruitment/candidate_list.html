@@ -1,3 +1,4 @@
+<!-- recruitment/templates/recruitment/candidate_list.html -->
 {% extends 'recruitment/base.html' %}
 
 {% block title %}Candidates{% endblock %}
@@ -5,7 +6,8 @@
 {% block content %}
     <div class="card shadow p-4">
         <h2>Candidates</h2>
-        <a href="{% url 'recruitment:candidate_list' %}"">View Candidates</a>
+        <!-- Remove redundant link to candidate_list -->
+        <!-- <a href="{% url 'recruitment:candidate_list' %}"">View Candidates</a> -->
         <table class="table table-striped">
             <thead class="table-dark">
                 <tr>
@@ -33,5 +35,6 @@
                 {% endfor %}
             </tbody>
         </table>
+        <a href="{% url 'recruitment:dashboard' %}" class="btn btn-secondary">Cancel</a>
     </div>
 {% endblock %}

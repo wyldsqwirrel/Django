@@ -1,55 +1,39 @@
+# recruitment/admin.py
 from django.contrib import admin
-from .models import Candidate, Job, Company, Contact, Placement  # ✅ Add all models here
+from .models import Candidate, Company, Contact, Job, Interview, Placement
 
-# ✅ BaseAdmin class for shared filters & search
-class BaseAdmin(admin.ModelAdmin):
-    list_display = ["name", "created_on", "modified_on"]  # ✅ Standard fields for all models
-    list_filter = ("created_on", "modified_on")  # ✅ Common filters
-    search_fields = ("name", "created_on", "modified_on")  # ✅ Common search fields
-
-# ✅ Register all models with BaseAdmin
 @admin.register(Candidate)
-class CandidateAdmin(BaseAdmin):
-    list_display = ["name", "job_title", "candidate_status", "salary", "created_on"]
-    list_filter = ("job_title", "candidate_status", "salary")
-    search_fields = ("name", "job_title", "email", "skills", "industry", "created_on", "modified_on")
-
-@admin.register(Job)
-class JobAdmin(BaseAdmin):
-    list_display = ["name", "industry", "salary", "created_on", "calculated_fee"]
-    list_filter = ("industry", "salary")
-    search_fields = ("name", "industry", "skills", "created_on", "modified_on")
-
-    def calculated_fee(self, obj):
-        return f"${obj.calculate_fee():,.2f}"  # ✅ Formats fee with commas
-    calculated_fee.short_description = "Fee (Based on %)"  # ✅ Admin column title
-
+class CandidateAdmin(admin.ModelAdmin):
+    list_display = ['full_name', 'email', 'candidate_status']  # Updated 'name' to 'full_name'
+    list_filter = ['candidate_status']
+    search_fields = ['full_name', 'email']
 
 @admin.register(Company)
-class CompanyAdmin(BaseAdmin):
-    list_display = ["name", "industry", "created_on"]
-    list_filter = ("industry",)
-    search_fields = ("name", "industry", "created_on", "modified_on")
+class CompanyAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'industry']
+    list_filter = ['industry']
+    search_fields = ['name', 'email']
 
 @admin.register(Contact)
-class ContactAdmin(BaseAdmin):
-    list_display = ["name", "email", "created_on"]
-    list_filter = ("created_on",)
-    search_fields = ("name", "email", "created_on", "modified_on")
+class ContactAdmin(admin.ModelAdmin):
+    list_display = ['full_name', 'email', 'company']  # Updated 'name' to 'full_name'
+    list_filter = ['company']
+    search_fields = ['full_name', 'email']
 
-from django.contrib import admin
-from .models import Placement
+@admin.register(Job)
+class JobAdmin(admin.ModelAdmin):
+    list_display = ['job_title', 'job_type', 'job_status']  # Updated 'name' to 'job_title', removed 'industry'
+    list_filter = ['job_type', 'job_status']  # Removed 'industry'
+    search_fields = ['job_title']
+
+@admin.register(Interview)
+class InterviewAdmin(admin.ModelAdmin):
+    list_display = ['interview_id', 'job', 'candidate', 'status']
+    list_filter = ['status', 'interview_type']
+    search_fields = ['job__job_title', 'candidate__full_name']
 
 @admin.register(Placement)
 class PlacementAdmin(admin.ModelAdmin):
-    list_display = ["candidate", "job", "created_on", "placement_type", "start_date", "calculated_fee", "calculated_temp_fee"]
-    list_filter = ("created_on",)
-    search_fields = ("candidate__full_name", "job__job_title", "created_on", "modified_on")
-
-    def calculated_fee(self, obj):
-        return f"${obj.calculate_fee():,.2f}"  # ✅ Formats fee correctly
-    calculated_fee.short_description = "Placement Fee"
-
-    def calculated_temp_fee(self, obj):
-        return f"${obj.calculate_temp_fee():,.2f}"  # ✅ Formats temp fee correctly
-    calculated_temp_fee.short_description = "Temp Placement Fee"
+    list_display = ['placement_code', 'job', 'candidate']  # Removed 'created_on'
+    list_filter = ['placement_type']  # Removed 'created_on'
+    search_fields = ['placement_code', 'job__job_title']

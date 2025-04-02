@@ -1,0 +1,113 @@
+<!-- core/templates/core/task_list.html -->
+{% extends 'base.html' %}
+
+{% block title %}Task List{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Your Tasks</h1>
+
+    <!-- Pomodoro Timer -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3>Pomodoro Timer</h3>
+            <p id="timer-phase">Phase: Work</p>
+            <p id="timer-display">Time Remaining: 25:00</p>
+            <button id="start-timer" class="btn btn-primary">Start Timer</button>
+            <button id="pause-timer" class="btn btn-warning" disabled>Pause Timer</button>
+            <button id="reset-timer" class="btn btn-danger">Reset Timer</button>
+        </div>
+    </div>
+
+    <a href="{% url 'core:task_create' %}" class="btn btn-primary mb-3">Create New Task</a>
+    <ul class="list-group">
+        {% for task in tasks %}
+            <li class="list-group-item">
+                <strong>{{ task.title }}</strong>
+                <small class="text-muted d-block">Due: {{ task.due_date|date:"Y-m-d H:i" }}</small>
+                <p>{{ task.description }}</p>
+                <p>Completed: {% if task.completed %}Yes{% else %}No{% endif %}</p>
+            </li>
+        {% empty %}
+            <li class="list-group-item">No tasks available.</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'core:dashboard' %}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Initialize timer variables
+    let workDuration = {{ pomodoro.work_duration }}; // In seconds
+    let breakDuration = {{ pomodoro.break_duration }}; // In seconds
+    let currentPhase = '{{ pomodoro.initial_phase }}'; // 'work' or 'break'
+    let timeRemaining = currentPhase === 'work' ? workDuration : breakDuration;
+    let timerRunning = false;
+    let timerInterval = null;
+
+    // DOM elements
+    const timerPhase = document.getElementById('timer-phase');
+    const timerDisplay = document.getElementById('timer-display');
+    const startButton = document.getElementById('start-timer');
+    const pauseButton = document.getElementById('pause-timer');
+    const resetButton = document.getElementById('reset-timer');
+
+    // Function to update the timer display
+    function updateTimerDisplay() {
+        let minutes = Math.floor(timeRemaining / 60);
+        let seconds = timeRemaining % 60;
+        timerDisplay.textContent = `Time Remaining: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        timerPhase.textContent = `Phase: ${currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1)}`;
+    }
+
+    // Function to start the timer
+    function startTimer() {
+        if (!timerRunning) {
+            timerRunning = true;
+            startButton.disabled = true;
+            pauseButton.disabled = false;
+            timerInterval = setInterval(() => {
+                if (timeRemaining > 0) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                } else {
+                    // Switch phases
+                    currentPhase = currentPhase === 'work' ? 'break' : 'work';
+                    timeRemaining = currentPhase === 'work' ? workDuration : breakDuration;
+                    updateTimerDisplay();
+                }
+            }, 1000);
+        }
+    }
+
+    // Function to pause the timer
+    function pauseTimer() {
+        if (timerRunning) {
+            timerRunning = false;
+            clearInterval(timerInterval);
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+        }
+    }
+
+    // Function to reset the timer
+    function resetTimer() {
+        timerRunning = false;
+        clearInterval(timerInterval);
+        currentPhase = '{{ pomodoro.initial_phase }}';
+        timeRemaining = currentPhase === 'work' ? workDuration : breakDuration;
+        updateTimerDisplay();
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+    }
+
+    // Event listeners for buttons
+    startButton.addEventListener('click', startTimer);
+    pauseButton.addEventListener('click', pauseTimer);
+    resetButton.addEventListener('click', resetTimer);
+
+    // Initial display
+    updateTimerDisplay();
+</script>
+{% endblock %}

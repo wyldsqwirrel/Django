@@ -1,0 +1,4 @@
+<h1>Task: {{ task.title }}</h1>
+<p>{{ task.description }}</p>
+<a href="{% url 'productivity:notes_task' task.id %}">View Notes</a>
+<a href="{% url 'productivity:board_task' task.id %}">View Board</a>
